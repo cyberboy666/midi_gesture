@@ -3,6 +3,10 @@
 #include <Keyboard.h>
 #include <usbmidi.h>
 
+#include <Adafruit_MPU6050.h>
+#include <Adafruit_Sensor.h>
+#include <Wire.h>
+
 // const byte ROWS = 4; //five rows
 // const byte COLS = 5; //four columns
 // char keys[ROWS][COLS] = {
@@ -25,30 +29,85 @@
 // int a6 = A0;
 // int a7 = A1;
 
-// int v0, v1, v2, v3, v4, v5, v6, v7;
-// int n0, n1, n2, n3, n4, n5, n6, n7;
+int v0, v1, v2, v3, v4, v5, v6, v7, vx, vy, vz;
+int n0, n1, n2, n3, n4, n5, n6, n7, nx, ny, nz;
 
-// void sendCC(uint8_t channel, uint8_t control, uint8_t value) {
+Adafruit_MPU6050 mpu;
+
+
+void sendCC(uint8_t channel, uint8_t control, uint8_t value) {
   
-// 	USBMIDI.write(0xB0 | (channel & 0xf));
-// 	USBMIDI.write(control & 0x7f);
-// 	USBMIDI.write(value & 0x7f);
-//   USBMIDI.flush();
-// }
+	USBMIDI.write(0xB0 | (channel & 0xf));
+	USBMIDI.write(control & 0x7f);
+	USBMIDI.write(value & 0x7f);
+  USBMIDI.flush();
+}
 
-// void checkAndSendValue(int old_analog_value, int new_analog_value, uint8_t control) {
-//   if(old_analog_value != new_analog_value){
-//       sendCC(0,control,new_analog_value);
-//   }
-// }
+void checkAndSendValue(int old_analog_value, int new_analog_value, uint8_t control) {
+  // if(old_analog_value != new_analog_value){
+    if(abs(old_analog_value - new_analog_value) > 1){
+      sendCC(0,control,new_analog_value);
+  }
+}
 
-// void setup() {
-//   Serial.begin(9600);
-//   Keyboard.begin();
+// Function to map a value from one range to another
+float mapFloat(float x, float inMin, float inMax, float outMin, float outMax) {
+  float mappedValue = (x - inMin) * (outMax - outMin) / (inMax - inMin) + outMin;
+  return constrain(mappedValue, outMin, outMax);
+}
 
-// }
+void setup() {
+  Serial.begin(9600);
+  Keyboard.begin();
 
-// void loop() {
+    // Try to initialize!
+  if (!mpu.begin()) {
+    Serial.println("Failed to find MPU6050 chip");
+    while (1) {
+      delay(10);
+    }
+  }
+  Serial.println("MPU6050 Found!");
+
+  //setupt motion detection
+  mpu.setHighPassFilter(MPU6050_HIGHPASS_0_63_HZ);
+  mpu.setFilterBandwidth(MPU6050_BAND_260_HZ); //MPU6050_BAND_21_HZ);
+  // mpu.setAccelerometerRange(MPU6050_RANGE_8_G);
+  mpu.setGyroRange(MPU6050_RANGE_250_DEG);
+  // mpu.setMotionDetectionThreshold(1);
+  // mpu.setMotionDetectionDuration(20);
+  // mpu.setInterruptPinLatch(true);	// Keep it latched.  Will turn off when reinitialized.
+  // mpu.setInterruptPinPolarity(true);
+  // mpu.setMotionInterrupt(true);
+
+}
+
+void loop() {
+
+
+    // if(mpu.getMotionInterruptStatus()) {
+    /* Get new sensor events with the readings */
+    sensors_event_t a, g, temp;
+  mpu.getEvent(&a, &g, &temp);
+  // Serial.print("/*");
+  // Serial.print(a.gyro.x);
+  // Serial.print(",");
+  // Serial.print(a.gyro.y);
+  // // Serial.print(",");
+  // // Serial.print(a.gyro.z);
+  // Serial.print("*/");
+  // Serial.println("");
+  uint8_t vx = static_cast<uint8_t>(mapFloat(a.gyro.x, -8.0, 9.0, 0, 127));
+  checkAndSendValue(nx, vx, 0);
+  nx = vx;
+  uint8_t vy = static_cast<uint8_t>(mapFloat(a.gyro.y, -8.0, 9.0, 0, 127));
+  checkAndSendValue(ny, vy, 1);
+  ny = vy;
+  // uint8_t vz = static_cast<uint8_t>(mapFloat(a.gyro.z, -6.0, 6.0, 0, 127));
+  // checkAndSendValue(nz, vz, 2);
+  // nz = vz;
+  // }
+  delay(20);
 //     v0 = analogRead(a0)/8;
 //     checkAndSendValue(n0, v0, 0);
 //     n0 = v0;
@@ -80,74 +139,5 @@
 //      Keyboard.write(key);
 //      Serial.write(key);
 //      }
-// }
-
-
-#include <Adafruit_MPU6050.h>
-#include <Adafruit_Sensor.h>
-#include <Wire.h>
-
-Adafruit_MPU6050 mpu;
-
-void setup(void) {
-  Serial.begin(115200);
-  while (!Serial)
-    delay(10); // will pause Zero, Leonardo, etc until serial console opens
-
-  Serial.println("Adafruit MPU6050 test!");
-
-  // Try to initialize!
-  if (!mpu.begin()) {
-    Serial.println("Failed to find MPU6050 chip");
-    while (1) {
-      delay(10);
-    }
-  }
-  Serial.println("MPU6050 Found!");
-
-  //setupt motion detection
-  mpu.setHighPassFilter(MPU6050_HIGHPASS_0_63_HZ);
-  mpu.setMotionDetectionThreshold(5);
-  mpu.setMotionDetectionDuration(20);
-  mpu.setInterruptPinLatch(true);	// Keep it latched.  Will turn off when reinitialized.
-  mpu.setInterruptPinPolarity(true);
-  mpu.setMotionInterrupt(true);
-
-  Serial.println("");
-  delay(100);
 }
 
-void loop() {
-
-  if(mpu.getMotionInterruptStatus()) {
-    /* Get new sensor events with the readings */
-    sensors_event_t a, g, temp;
-    mpu.getEvent(&a, &g, &temp);
-
-    /* Print out the values */
-    Serial.print("/*");
-    Serial.print("AccelX,");
-    Serial.print(a.acceleration.x);
-    // Serial.print(",");
-    // Serial.print("AccelY:");
-    // Serial.print(a.acceleration.y);
-    // Serial.print(",");
-    // Serial.print("AccelZ:");
-    // Serial.print(a.acceleration.z);
-    // Serial.print(", ");
-    // Serial.print("GyroX:");
-    // Serial.print(g.gyro.x);
-    // Serial.print(",");
-    // Serial.print("GyroY:");
-    // Serial.print(g.gyro.y);
-    // Serial.print(",");
-    // Serial.print("GyroZ:");
-    // Serial.print(g.gyro.z);
-    Serial.print("*/");
-    Serial.println("");
-
-  }
-   
-
-  delay(10);
-}

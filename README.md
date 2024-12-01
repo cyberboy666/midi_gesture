@@ -1,6 +1,6 @@
-# midi_guesture
+# midi_gesture
 
-a gesture-controlled MIDI device
+WIP
 
 a gesture-controlled MIDI device
 

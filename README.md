@@ -42,8 +42,7 @@ the cc values on the ldr channel depends on how much light falls on the ldr. mid
 
 additionally to the ldr control there is a gyro module that can control cc channels 5 and 6
 
-![image](https://github.com/user-attachments/assets/572d9313-6f1f-4bed-b947-1afbab8962fb)
-
+![Screenshot from 2024-12-02 11-50-06](https://github.com/user-attachments/assets/c7a71628-8f44-4d19-98e2-c9c042968df2)
 
 - the middle button of left enables the x axis to send midi on channel 5 (led shows white when channel is enalbed)
 - the middle button of right enables the y axis to send midi on channel 6 (led shows white when channel is enalbed)
